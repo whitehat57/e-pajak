@@ -7,6 +7,7 @@ import os
 from ui.menus.employee_menu import EmployeeMenu
 from ui.menus.transaction_menu import TransactionMenu
 from ui.menus.spt_menu import SPTMenu
+from ui.menus.export_menu import ExportMenu
 
 console = Console()
 
@@ -16,6 +17,7 @@ class TaxDashboard:
         self.employee_menu = EmployeeMenu()
         self.transaction_menu = TransactionMenu()
         self.spt_menu = SPTMenu()
+        self.export_menu = ExportMenu()
     
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -60,7 +62,7 @@ class TaxDashboard:
         elif choice == "6":
             self.show_master_data()
         elif choice == "7":
-            self.export_reports()
+            self.export_menu.show_export_menu()
         elif choice == "8":
             self.show_settings()
         elif choice == "9":
@@ -84,14 +86,6 @@ class TaxDashboard:
         
         # Placeholder untuk data master
         console.print("Fitur data master akan diimplementasikan...")
-        input("\nTekan Enter untuk kembali ke menu utama...")
-    
-    def export_reports(self):
-        self.clear_screen()
-        console.print(Panel("[bold orange]📤 EKSPOR LAPORAN[/bold orange]", border_style="orange"))
-        
-        # Placeholder untuk ekspor laporan
-        console.print("Fitur ekspor laporan akan diimplementasikan...")
         input("\nTekan Enter untuk kembali ke menu utama...")
     
     def show_settings(self):
