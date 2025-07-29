@@ -238,18 +238,22 @@ class EmployeeMenu:
             console.print("-" * 50)
             
             # Input data tambahan untuk perhitungan
-            has_spouse = Confirm.ask("Apakah pegawai sudah menikah?", default=False)
-            if has_spouse:
-                num_children = IntPrompt.ask("Jumlah anak (maksimal 3)", default=0, choices=["0","1","2","3"])
-            else:
-                num_children = 0
+            status_kawin = Prompt.ask("Status kawin", choices=["TK", "K", "K/I"], default="TK")
+            jumlah_tanggungan = IntPrompt.ask("Jumlah tanggungan (maksimal 3)", default=0, choices=["0","1","2","3"])
+            
+            # Tentukan status pernikahan dan joint filing
+            has_spouse = status_kawin in ["K", "K/I"]
+            joint_filing = status_kawin == "K/I"
+            
+            # Pilihan metode perhitungan
+            use_ter = Confirm.ask("Gunakan metode Tarif Efektif Rata-rata (TER)?", default=False)
             
             # Hitung PPh 21
-            calculator = PPh21Calculator(employee, num_children, has_spouse)
-            result = calculator.calculate_with_npwp_discount()
+            calculator = PPh21Calculator(employee, jumlah_tanggungan, has_spouse, joint_filing)
+            result = calculator.calculate_with_npwp_discount(use_ter)
             
             # Tampilkan hasil perhitungan
-            self.display_pph21_result(employee, result)
+            self.display_pph21_result(employee, result, status_kawin, jumlah_tanggungan)
             
             # Simpan ke riwayat pajak
             save_record = Confirm.ask("\nSimpan hasil perhitungan ke riwayat pajak?", default=True)
@@ -261,7 +265,7 @@ class EmployeeMenu:
                 tax_record.taxable_income = result['taxable_income']
                 tax_record.tax_amount = result['final_tax']
                 tax_record.tax_type = "pph21"
-                tax_record.description = f"Perhitungan PPh 21 tahunan {datetime.now().year}"
+                tax_record.description = f"PPh 21 {status_kawin}/{jumlah_tanggungan} {datetime.now().year}"
                 tax_record.save()
                 console.print("[bold green]✅ Hasil perhitungan disimpan![/bold green]")
             
@@ -269,31 +273,38 @@ class EmployeeMenu:
             console.print(f"[bold red]❌ Error: {e}[/bold red]")
         
         input("\nTekan Enter untuk kembali...")
-    
-    def display_pph21_result(self, employee, result):
+
+    def display_pph21_result(self, employee, result, status_kawin, jumlah_tanggungan):
         console.print(f"\n[bold cyan]📋 HASIL PERHITUNGAN PPH 21[/bold cyan]")
         console.print("=" * 60)
         console.print(f"Nama Pegawai     : {employee.name}")
-        console.print(f"Status           : {employee.status.title()}")
+        console.print(f"Status           : {status_kawin}/{jumlah_tanggungan}")
         console.print(f"NPWP             : {'Ada' if employee.npwp else 'Tidak Ada'}")
         console.print("-" * 60)
         console.print(f"Penghasilan Bruto Tahunan : Rp {result['gross_income']:,.0f}")
-        console.print(f"PTKP                 : Rp {result['ptkp']:,.0f}")
-        console.print(f"Penghasilan Kena Pajak   : Rp {result['taxable_income']:,.0f}")
-        console.print(f"PPh 21 Terutang       : Rp {result['tax_amount']:,.0f}")
+        console.print(f"Biaya Jabatan             : Rp {result['biaya_jabatan']:,.0f}")
+        console.print(f"Penghasilan Netto         : Rp {result['net_income']:,.0f}")
+        console.print(f"PTKP                      : Rp {result['ptkp']:,.0f}")
+        console.print(f"Penghasilan Kena Pajak    : Rp {result['taxable_income']:,.0f}")
+        
+        if result.get('use_ter', False):
+            console.print(f"Tarif Efektif             : {result.get('effective_rate', 0)*100:.2f}%")
+            console.print(f"PPh 21 Terutang           : Rp {result['tax_amount']:,.0f}")
+        else:
+            console.print(f"PPh 21 Terutang           : Rp {result['tax_amount']:,.0f}")
         
         if result['discount'] > 0:
-            console.print(f"Diskon NPWP (5%)     : Rp {result['discount']:,.0f}")
-            console.print(f"[bold]PPh 21 Setelah Diskon   : Rp {result['final_tax']:,.0f}[/bold]")
+            console.print(f"Diskon NPWP (5%)          : Rp {result['discount']:,.0f}")
+            console.print(f"[bold]PPh 21 Setelah Diskon        : Rp {result['final_tax']:,.0f}[/bold]")
         
-        console.print(f"[bold green]PPh 21 Per Bulan      : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
+        console.print(f"[bold green]PPh 21 Per Bulan           : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
         
-        # Tampilkan breakdown perhitungan
-        if 'breakdown' in result and result['breakdown']:
+        # Tampilkan breakdown perhitungan (hanya untuk metode progresif)
+        if not result.get('use_ter', False) and 'breakdown' in result and result['breakdown']:
             console.print(f"\n[bold]🧮 Breakdown Perhitungan:[/bold]")
             for bracket in result['breakdown']:
-                console.print(f"  • {bracket['rate']*100:,.0f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
-    
+                console.print(f"  • {bracket['rate']*100:,.1f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
+
     def view_tax_history(self):
         console.clear()
         console.print("[bold cyan]📊 RIWAYAT PAJAK PEGAWAI[/bold cyan]")

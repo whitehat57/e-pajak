@@ -56,16 +56,15 @@ class SPTCalculator:
         total_pph21 = 0
         
         for employee in employees:
-            # Hitung total gaji tahunan
-            annual_salary = employee.monthly_salary * 12
-            annual_allowances = employee.allowances * 12
-            total_gross_salary += annual_salary
-            total_allowances += annual_allowances
-            
-            # Hitung PPh 21 untuk pegawai ini
-            calculator = self.pph21_calculator(employee, 0, False)  # Asumsi sederhana
-            pph21_result = calculator.calculate_with_npwp_discount()
+            # Untuk SPT, gunakan metode progresif sebagai default
+            # Dalam praktiknya, ini bisa disesuaikan berdasarkan metode yang digunakan perusahaan
+            calculator = self.pph21_calculator(employee, 0, False, False)  # Default TK/0
+            pph21_result = calculator.calculate_with_npwp_discount(False)  # Metode progresif
             total_pph21 += pph21_result['final_tax']
+            
+            # Tambahkan penghasilan untuk rekap
+            total_gross_salary += employee.monthly_salary * 12
+            total_allowances += employee.allowances * 12
         
         return {
             'year': year,
