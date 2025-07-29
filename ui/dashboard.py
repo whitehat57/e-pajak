@@ -8,6 +8,7 @@ from ui.menus.employee_menu import EmployeeMenu
 from ui.menus.transaction_menu import TransactionMenu
 from ui.menus.spt_menu import SPTMenu
 from ui.menus.export_menu import ExportMenu
+from ui.menus.settings_menu import SettingsMenu
 
 console = Console()
 
@@ -18,6 +19,7 @@ class TaxDashboard:
         self.transaction_menu = TransactionMenu()
         self.spt_menu = SPTMenu()
         self.export_menu = ExportMenu()
+        self.settings_menu = SettingsMenu()
     
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -25,6 +27,22 @@ class TaxDashboard:
     def show_main_menu(self):
         self.clear_screen()
         console.print(Panel.fit("[bold blue]🏢 APLIKASI KELOLA PAJAK USAHA[/bold blue]", border_style="blue"))
+        
+        # Tampilkan notifikasi singkat di header
+        from utils.notification_manager import NotificationManager
+        from config.settings import AppSettings
+        notification_manager = NotificationManager()
+        settings = AppSettings()
+        
+        # Dapatkan notifikasi penting (high priority)
+        notifications = notification_manager.get_upcoming_tax_deadlines(7)  # 7 hari ke depan
+        high_priority = [n for n in notifications if n.get('priority') == 'high']
+        
+        if high_priority:
+            console.print("[bold red]🚨 NOTIFIKASI PENTING:[/bold red]")
+            for notif in high_priority[:2]:  # Tampilkan maksimal 2 notifikasi
+                console.print(f"   {notif['description']} - {notif['days_until']} hari lagi")
+            console.print("")
         
         table = Table(show_header=False, box=None, padding=(1, 2))
         table.add_column("Menu", style="cyan")
@@ -64,7 +82,7 @@ class TaxDashboard:
         elif choice == "7":
             self.export_menu.show_export_menu()
         elif choice == "8":
-            self.show_settings()
+            self.settings_menu.show_settings_menu()
         elif choice == "9":
             self.running = False
             console.print("[bold green]👋 Terima kasih telah menggunakan aplikasi![/bold green]")
@@ -86,14 +104,6 @@ class TaxDashboard:
         
         # Placeholder untuk data master
         console.print("Fitur data master akan diimplementasikan...")
-        input("\nTekan Enter untuk kembali ke menu utama...")
-    
-    def show_settings(self):
-        self.clear_screen()
-        console.print(Panel("[bold gray]⚙️  PENGATURAN[/bold gray]", border_style="gray"))
-        
-        # Placeholder untuk pengaturan
-        console.print("Fitur pengaturan akan diimplementasikan...")
         input("\nTekan Enter untuk kembali ke menu utama...")
     
     def run(self):
