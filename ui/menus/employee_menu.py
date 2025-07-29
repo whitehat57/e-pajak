@@ -261,28 +261,28 @@ class EmployeeMenu:
         input("\nTekan Enter untuk kembali...")
     
     def display_pph21_result(self, employee, result):
-        console.print(f"\n[bold cyan]📋 HASIL PERHITUNGAN PPH 21[/bold cyan]")
-        console.print("=" * 60)
-        console.print(f"Nama Pegawai     : {employee.name}")
-        console.print(f"Status           : {employee.status.title()}")
-        console.print(f"NPWP             : {'Ada' if employee.npwp else 'Tidak Ada'}")
-        console.print("-" * 60)
-        console.print(f"Penghasilan Bruto Tahunan : Rp {result['gross_income']:,.0f}")
-        console.print(f"PTKP                 : Rp {result['ptkp']:,.0f}")
-        console.print(f"Penghasilan Kena Pajak   : Rp {result['taxable_income']:,.0f}")
-        console.print(f"PPh 21 Terutang       : Rp {result['tax_amount']:,.0f}")
-        
-        if result['discount'] > 0:
-            console.print(f"Diskon NPWP (5%)     : Rp {result['discount']:,.0f}")
-            console.print(f"[bold]PPh 21 Setelah Diskon   : Rp {result['final_tax']:,.0f}[/bold]")
-        
-        console.print(f"[bold green]PPh 21 Per Bulan      : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
-        
-        # Tampilkan breakdown perhitungan
-        if 'breakdown' in result and result['breakdown']:
-            console.print(f"\n[bold]🧮 Breakdown Perhitungan:[/bold]")
-            for bracket in result['breakdown']:
-                console.print(f"  • {bracket['rate']*100:,.0f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
+    console.print(f"\n[bold cyan]📋 HASIL PERHITUNGAN PPH 21[/bold cyan]")
+    console.print("=" * 60)
+    console.print(f"Nama Pegawai     : {employee.name}")
+    console.print(f"Status           : {employee.status.title()}")
+    console.print(f"NPWP             : {'Ada' if employee.npwp else 'Tidak Ada'}")
+    console.print("-" * 60)
+    console.print(f"Penghasilan Bruto Tahunan : Rp {result['gross_income']:,.0f}")
+    console.print(f"PTKP                 : Rp {result['ptkp']:,.0f}")
+    console.print(f"Penghasilan Kena Pajak   : Rp {result['taxable_income']:,.0f}")
+    console.print(f"PPh 21 Terutang       : Rp {result['tax_amount']:,.0f}")
+    
+    if result['discount'] > 0:
+        console.print(f"Diskon NPWP (5%)     : Rp {result['discount']:,.0f}")
+        console.print(f"[bold]PPh 21 Setelah Diskon   : Rp {result['final_tax']:,.0f}[/bold]")
+    
+    console.print(f"[bold green]PPh 21 Per Bulan      : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
+    
+    # Tampilkan breakdown perhitungan
+    if 'breakdown' in result and result['breakdown']:
+        console.print(f"\n[bold]🧮 Breakdown Perhitungan:[/bold]")
+        for bracket in result['breakdown']:
+            console.print(f"  • {bracket['rate']*100:,.0f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
     
     def view_tax_history(self):
         console.clear()

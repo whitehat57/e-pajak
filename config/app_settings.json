@@ -1,0 +1,15 @@
+{
+    "company_name": "Perusahaan Saya",
+    "company_npwp": "",
+    "company_address": "",
+    "default_currency": "IDR",
+    "ppn_rate": 0.11,
+    "corporate_tax_rate": 0.25,
+    "reminder_days": 7,
+    "auto_backup": true,
+    "backup_frequency": "weekly",
+    "theme": "default",
+    "language": "id",
+    "created_at": "2025-07-29T11:38:16.238556",
+    "updated_at": "2025-07-29T11:38:16.238675"
+}

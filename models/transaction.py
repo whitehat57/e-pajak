@@ -12,6 +12,7 @@ class Transaction:
     ppn_amount: float = 0.0
     transaction_date: str = ""
     invoice_number: Optional[str] = None
+    created_at: Optional[str] = None
     
     def save(self):
         conn = db_manager.get_connection()
@@ -40,22 +41,44 @@ class Transaction:
     def get_all(cls):
         conn = db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM transactions ORDER BY transaction_date DESC, id DESC')
+        cursor.execute('SELECT id, type, description, amount, ppn_amount, transaction_date, invoice_number, created_at FROM transactions ORDER BY transaction_date DESC, id DESC')
         rows = cursor.fetchall()
         conn.close()
         
-        return [cls(row[0], row[1], row[2], row[3], row[4], row[5], row[6]) for row in rows]
+        transactions = []
+        for row in rows:
+            transaction = cls()
+            transaction.id = row[0]
+            transaction.type = row[1]
+            transaction.description = row[2]
+            transaction.amount = row[3]
+            transaction.ppn_amount = row[4]
+            transaction.transaction_date = row[5]
+            transaction.invoice_number = row[6]
+            transaction.created_at = row[7]
+            transactions.append(transaction)
+        
+        return transactions
     
     @classmethod
     def get_by_id(cls, trans_id):
         conn = db_manager.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM transactions WHERE id=?', (trans_id,))
+        cursor.execute('SELECT id, type, description, amount, ppn_amount, transaction_date, invoice_number, created_at FROM transactions WHERE id=?', (trans_id,))
         row = cursor.fetchone()
         conn.close()
         
         if row:
-            return cls(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+            transaction = cls()
+            transaction.id = row[0]
+            transaction.type = row[1]
+            transaction.description = row[2]
+            transaction.amount = row[3]
+            transaction.ppn_amount = row[4]
+            transaction.transaction_date = row[5]
+            transaction.invoice_number = row[6]
+            transaction.created_at = row[7]
+            return transaction
         return None
     
     def delete(self):
