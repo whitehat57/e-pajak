@@ -2,6 +2,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 from rich import print as rprint
+from datetime import datetime
 from models.employee import Employee
 from models.tax import TaxRecord
 from services.pp21_calculator import PPh21Calculator
@@ -68,6 +69,7 @@ class EmployeeMenu:
         table.add_column("Gaji Bulanan", justify="right")
         table.add_column("Tunjangan", justify="right")
         table.add_column("NPWP", width=15)
+        table.add_column("Tgl Dibuat", width=12)
         
         for emp in employees:
             table.add_row(
@@ -76,7 +78,8 @@ class EmployeeMenu:
                 emp.status.title(),
                 f"Rp {emp.monthly_salary:,.0f}",
                 f"Rp {emp.allowances:,.0f}",
-                emp.npwp or "-"
+                emp.npwp or "-",
+                emp.created_at[:10] if emp.created_at else "-"
             )
         
         console.print(table)
@@ -107,6 +110,7 @@ class EmployeeMenu:
             employee.save()
             
             console.print("[bold green]✅ Pegawai berhasil ditambahkan![/bold green]")
+            console.print(f"ID Pegawai: {employee.id}")
             
         except Exception as e:
             console.print(f"[bold red]❌ Error: {e}[/bold red]")
@@ -131,12 +135,12 @@ class EmployeeMenu:
             emp_id = IntPrompt.ask("\nMasukkan ID pegawai yang akan diedit")
             employee = Employee.get_by_id(emp_id)
             
-            if not employee:
+            if not employee or employee.id is None:
                 console.print("[bold red]❌ Pegawai tidak ditemukan![/bold red]")
                 input("\nTekan Enter untuk kembali...")
                 return
             
-            console.print(f"\n[bold]Mengedit data: {employee.name}[/bold]")
+            console.print(f"\n[bold]Mengedit  {employee.name}[/bold]")
             console.print("-" * 30)
             
             # Input data baru
@@ -182,13 +186,20 @@ class EmployeeMenu:
             emp_id = IntPrompt.ask("\nMasukkan ID pegawai yang akan dihapus")
             employee = Employee.get_by_id(emp_id)
             
-            if not employee:
+            if not employee or employee.id is None:
                 console.print("[bold red]❌ Pegawai tidak ditemukan![/bold red]")
                 input("\nTekan Enter untuk kembali...")
                 return
             
+            # Tampilkan detail pegawai
+            console.print(f"\n[bold]Detail Pegawai:[/bold]")
+            console.print(f"Nama        : {employee.name}")
+            console.print(f"Status      : {employee.status.title()}")
+            console.print(f"Gaji Bulanan: Rp {employee.monthly_salary:,.0f}")
+            console.print(f"Tunjangan   : Rp {employee.allowances:,.0f}")
+            
             # Konfirmasi hapus
-            confirm = Confirm.ask(f"Yakin ingin menghapus pegawai '{employee.name}'?")
+            confirm = Confirm.ask(f"\nYakin ingin menghapus pegawai '{employee.name}'?")
             if confirm:
                 employee.delete()
                 console.print("[bold green]✅ Pegawai berhasil dihapus![/bold green]")
@@ -218,7 +229,7 @@ class EmployeeMenu:
             emp_id = IntPrompt.ask("\nMasukkan ID pegawai untuk perhitungan PPh 21")
             employee = Employee.get_by_id(emp_id)
             
-            if not employee:
+            if not employee or employee.id is None:
                 console.print("[bold red]❌ Pegawai tidak ditemukan![/bold red]")
                 input("\nTekan Enter untuk kembali...")
                 return
@@ -243,15 +254,14 @@ class EmployeeMenu:
             # Simpan ke riwayat pajak
             save_record = Confirm.ask("\nSimpan hasil perhitungan ke riwayat pajak?", default=True)
             if save_record:
-                tax_record = TaxRecord(
-                    employee_id=employee.id,
-                    period=f"{2024}-01",  # Default bulan ini
-                    gross_income=result['gross_income'],
-                    taxable_income=result['taxable_income'],
-                    tax_amount=result['final_tax'],
-                    tax_type="pph21",
-                    description=f"Perhitungan PPh 21 tahunan"
-                )
+                tax_record = TaxRecord()
+                tax_record.employee_id = employee.id
+                tax_record.period = datetime.now().strftime("%Y")
+                tax_record.gross_income = result['gross_income']
+                tax_record.taxable_income = result['taxable_income']
+                tax_record.tax_amount = result['final_tax']
+                tax_record.tax_type = "pph21"
+                tax_record.description = f"Perhitungan PPh 21 tahunan {datetime.now().year}"
                 tax_record.save()
                 console.print("[bold green]✅ Hasil perhitungan disimpan![/bold green]")
             
@@ -271,18 +281,18 @@ class EmployeeMenu:
         console.print(f"PTKP                 : Rp {result['ptkp']:,.0f}")
         console.print(f"Penghasilan Kena Pajak   : Rp {result['taxable_income']:,.0f}")
         console.print(f"PPh 21 Terutang       : Rp {result['tax_amount']:,.0f}")
-    
-    if result['discount'] > 0:
-        console.print(f"Diskon NPWP (5%)     : Rp {result['discount']:,.0f}")
-        console.print(f"[bold]PPh 21 Setelah Diskon   : Rp {result['final_tax']:,.0f}[/bold]")
-    
-    console.print(f"[bold green]PPh 21 Per Bulan      : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
-    
-    # Tampilkan breakdown perhitungan
-    if 'breakdown' in result and result['breakdown']:
-        console.print(f"\n[bold]🧮 Breakdown Perhitungan:[/bold]")
-        for bracket in result['breakdown']:
-            console.print(f"  • {bracket['rate']*100:,.0f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
+        
+        if result['discount'] > 0:
+            console.print(f"Diskon NPWP (5%)     : Rp {result['discount']:,.0f}")
+            console.print(f"[bold]PPh 21 Setelah Diskon   : Rp {result['final_tax']:,.0f}[/bold]")
+        
+        console.print(f"[bold green]PPh 21 Per Bulan      : Rp {result['monthly_final_tax']:,.0f}[/bold green]")
+        
+        # Tampilkan breakdown perhitungan
+        if 'breakdown' in result and result['breakdown']:
+            console.print(f"\n[bold]🧮 Breakdown Perhitungan:[/bold]")
+            for bracket in result['breakdown']:
+                console.print(f"  • {bracket['rate']*100:,.0f}% dari Rp {bracket['taxable_amount']:,.0f} = Rp {bracket['tax']:,.0f}")
     
     def view_tax_history(self):
         console.clear()
@@ -302,7 +312,7 @@ class EmployeeMenu:
             emp_id = IntPrompt.ask("\nMasukkan ID pegawai untuk melihat riwayat pajak")
             employee = Employee.get_by_id(emp_id)
             
-            if not employee:
+            if not employee or employee.id is None:
                 console.print("[bold red]❌ Pegawai tidak ditemukan![/bold red]")
                 input("\nTekan Enter untuk kembali...")
                 return
@@ -319,22 +329,26 @@ class EmployeeMenu:
                 return
             
             table = Table(show_header=True, header_style="bold blue")
+            table.add_column("ID", width=4)
             table.add_column("Periode", width=10)
             table.add_column("Jenis", width=8)
             table.add_column("Bruto", justify="right")
             table.add_column("PKP", justify="right")
             table.add_column("Pajak", justify="right")
             table.add_column("Deskripsi", width=25)
+            table.add_column("Tgl Hitung", width=12)
             
             total_tax = 0
             for record in tax_records:
                 table.add_row(
+                    str(record.id),
                     record.period,
                     record.tax_type.upper(),
                     f"Rp {record.gross_income:,.0f}",
                     f"Rp {record.taxable_income:,.0f}",
                     f"Rp {record.tax_amount:,.0f}",
-                    record.description[:25]
+                    record.description[:25],
+                    record.created_at[:10] if record.created_at else "-"
                 )
                 total_tax += record.tax_amount
             
